@@ -24,9 +24,9 @@ two
 
 ########FunctionsBTPS.R###########
 
-The FunctionsBTPS.R r script contains five functions.  These functions are used for simulating data and and fitting data using the penalized bivariate tensor product B-spline.  There is also a function for estimating the variance of the partial derivatives of the penalized BTPB, the main focas of the paper.
+The FunctionsBTPS.R r script contains seven functions.  These functions are used for simulating data and and fitting data using the penalized bivariate tensor product B-spline.  There is also a function for estimating the variance of the partial derivatives of the penalized BTPB, the main focas of the paper.
 
-The functions are: fitBTPS, yieldDataSim, coupute_bandwidth, predictDensity, and VarianceEstimator.
+The functions are: fitBTPS, yieldDataSim, coupute_bandwidth, predictDensity, VarianceEstimator, kernelEstimator, and fitKernel.
 
 ########fitBTPS
 
@@ -51,4 +51,18 @@ This function calculates the variance for any partial derivative up to the fourt
 
 ########kernelDensity
 
+The kernelDensity function is used to estimate the desnity for current year yield data.  It is a helper function for the fitKernel function.  The step by step explination of the steps can be found in the supplimental file section 1. To estimate the kernel density, a Gaussian smoothing kernel is used with bandwidth prescribed by data-based selection used in SHeather and Jones (1991).  This is the default given in r.  
+
 ########fitKernel
+
+The fitKernel function estimates the kernel density, estimates the value at new locations, and estimates the variance of the estimated points using a delete one Jackknife method.  
+
+########GraphSetUp.R###########
+
+The GraphSetUp.R script has two functions, one for penalized BTPB fits (myGraphs) and one for kernel density fits (myGraphsKern).  These functions work with monte carlo simulations and gives graphical results for these simulations.  Each function produces two graphs, a line graph showing the 2.5 and 97.5 percentiles and mean of the monte carlo replicates compared to the true value of the function, and a heat map showing the coverage probability of the variance estimators for the penalized BTPB fit and kernel density fit.  myGraphs can be used to produce figures 1 and 2 in the paper while myGraphsKern can be used to produce figures 1 and 2 in the supplimental file.
+
+########myGraphs
+
+
+
+########myGraphsKern
