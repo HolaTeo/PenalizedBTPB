@@ -63,6 +63,13 @@ The GraphSetUp.R script has two functions, one for penalized BTPB fits (myGraphs
 
 ########myGraphs
 
+This function will create graphs at given quantile values.  It takes output from the simStudyFunc in the SimulationSetUp.R script. It assumes that the first replicate of the estimates, (matrix[ , ,1]) are the true values. It then uses these true values and the rest of the MC replicates to a line graph showing the 2.5 and 97.5 percentiles and mean of the monte carlo replicates compared to the true value of the function.  Then it uses the variance matrix of the penalized BTPB from the simStudyFunc to create a heat map of the coverage rate.  95% is the nominal coverage in this case.  Red is for values above 95%, white is for values near 95% and blue is for values below 95%.  The blue get darker the farther away the coverage rate is from 95%
 
 
 ########myGraphsKern
+
+This function will create graphs at given quantile values.  It takes output from the simStudyKernel in the SimulationSetUp.R script. It assumes that the first replicate of the estimates, (matrix[ , ,1]) are the true values. It then uses these true values and the rest of the MC replicates to a line graph showing the 2.5 and 97.5 percentiles and mean of the monte carlo replicates compared to the true value of the function.  Then it uses the variance matrix of the kernel density from the simStudyFunc to create a heat map of the coverage rate.  The yield value have to be standardized in this case since the only values the w_i values where there is simulated data changes depending on the z_i value.  Standardizing the values allows for us to keep the square set up of the heat map.   95% is the nominal coverage in this case.  Red is for values above 95%, white is for values near 95% and blue is for values below 95%.  The blue get darker the farther away the coverage rate is from 95%.
+
+########SimulationSetUp.R###########
+
+The SimulationSetUp.R script provides a way to perform monte carlo studies for the penalized BTPB and the kernel density estimator.  There are two functions in this script, simStudyFunc and simStudyKernel, for the penalized BTPB and the kernel density estimator respectively.  Both functions allow for their output to be used in their respective functions in the GraphSetUp.R script.  
