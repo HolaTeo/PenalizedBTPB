@@ -23,6 +23,7 @@ one
 two
 
 ########FunctionsBTPS.R###########
+
 The FunctionsBTPS.R r script contains five functions.  These functions are used for simulating data and and fitting data using the penalized bivariate tensor product B-spline.  There is also a function for estimating the variance of the partial derivatives of the penalized BTPB, the main focas of the paper.
 
 The functions are: fitBTPS, yieldDataSim, coupute_bandwidth, predictDensity, and VarianceEstimator.
