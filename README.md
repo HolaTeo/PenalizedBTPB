@@ -76,6 +76,61 @@ The SimulationSetUp.R script provides a way to perform monte carlo studies for t
 
 ########simStudyFunc
 
-Creates a MC simulation for any of the sim study combinations discussed in 
+Creates a MC simulation for any of the sim study combinations discussed in Section 4 as well as a constant variance set up. Fits will be performed using the penalized BTPB. Will create two three dimensional arrays returned in a list for the estimates and the variance estimates.  Dimension 1 is the coverage rate values, dimension 2 is the APH yield values, and dimension three is the replicates.  For the estimates est[ , ,1] will have the true values based on the simulation set up.  Variances are calculated according to (22), so the z^2 and p have to be divided off later.  
 
 ########simStudyKernel
+
+Creates a MC simulation for any of the sim study combinations discussed in Section 4 as well as a constant variance set up. Fits will be performed using the kernel density estimation. The function will create two three dimensional arrays returned in a list for the estimates and the variance estimates.  Dimension 1 is the coverage rate values, dimension 2 is the APH yield values, and dimension three is the replicates.  For the estimates est[ , ,1] will have the true values based on the simulation set up.  Variances are calculated using delete one jackknife method, so this function may take a while to run and takes longer the larger the sample size.
+
+########SmallWorkingExample.R###########
+
+This script doesn't contain any functions, but uses fitBTPS and VarianceEstimator from FunctionsBTPS.R to show how the penalized BTPB works on a very simple simulated data, one in a quadratic form.  It is used more as a proof of concept.  
+
+x and z are simulated from 1:100 and y is defined as y=x^2+z^2+z*x^3. The derivatives will be taken wrt x.  So the first derivative is y'=2x+3z*x^2 and the second derivative is y"=2+6zx.  A sample of 500 is fitted by the penalized BTPB.  3-D plots are then used to compare the fitted values to the true values of the actual fit and the first two partial derivatives.  Next the variance is calculated and applied to the second partial derivative wrt x and a 3-D plot with a 95% confidence interval is shown.
+
+########Workflow_Script.R###########
+
+The Workflow_Script.R shows how to use the functions in the other scripts and how to create the graphs shown in the paper.
+
+First data is simulated (using function yieldDataSim from FunctionsBTPS.R).  Then data is fit using the penalized BTPB (using function fitBTPS from FunctionsBTPS.R).  Then the variance is estimated (using function VarianceEstimator from FunctionsBTPS.R). This shows a basic fit of the penalized BTPB.
+
+Next a set up of the monte carlo simulations is shown.  These are used to create the toy data used for creating graphs 1&2 in the paper and supplimental file.  The arguments used are in the comments. Also in the comments are the arguments used when running the script for the paper.  
+
+Using the MC toy data, figures 1&2 from the paper and supplimental file are produced.
+
+Next data is simulated to take the place of the empirical data in order to show how the graphs were created for the paper.
+
+The code for graphs 3 through 6 are not in function and are written out in Workflow_Script.R.  Graph 3 show the comparison of the penalized BTPB fit and the kernel density fit.  Graph 4 shows the whole estimated kernel density curve.  Graph 5 and 6 shows a comparison of the real premium values (or subsidized values) with the fitted BTPB
+
+###################################How to create the Graphs and Table in the Paper################################
+
+Figures 1&2 in the paper can be produced by using functions simStudyFunc in the SimulationSetUp.R script and myGraphs in the GraphSetUp.  Arguments needed for reproducing these figures can be found in the comments of the Workflow_Script.R script.
+
+Figures 1&2 in the supplemental paper can be produced by using functions simStudyKernel in the SimulationSetUp.R script and myGraphsKern in the GraphSetUp.  Arguments needed for reproducing these figures can be found in the comments of the Workflow_Script.R script.
+
+Figure 3 is produced by fitting the data with fitBTPS, VarianceEstimator, and fitKernel functions in FunctionsBTPS.R script.  Code for the graph is provided in Workflow_Script.R script.
+
+Figure 4 is produced by fitting the data with the fitKernel function in FunctionsBTPS.R script.  Code for the graph is provided in Workflow_Script.R script.
+
+Figures 5&6 is produced by fitting the data with the fitBTPS function in FunctionsBTPS.R script.  Code for the graph is provided in Workflow_Script.R script.
+
+Table 2 is produced by fitting the data with the fitBTPS function in FunctionsBTPS.R script.  Code for the graph is provided in Workflow_Script.R script.
+
+
+###################################Additional R packages needed################################
+
+mgcv_1.7-26
+
+msm_1.5
+
+rgl_0.95.1201
+
+MASS_7.3-29
+
+reshape2_1.2.2
+
+plyr_1.8
+
+ggplot2_0.9.3.1
+
+nlme_3.1-111
