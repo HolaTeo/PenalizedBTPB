@@ -73,3 +73,9 @@ This function will create graphs at given quantile values.  It takes output from
 ########SimulationSetUp.R###########
 
 The SimulationSetUp.R script provides a way to perform monte carlo studies for the penalized BTPB and the kernel density estimator.  There are two functions in this script, simStudyFunc and simStudyKernel, for the penalized BTPB and the kernel density estimator respectively.  Both functions allow for their output to be used in their respective functions in the GraphSetUp.R script.  
+
+########simStudyFunc
+
+Creates a MC simulation for any of the sim study combinations discussed in 
+
+########simStudyKernel
