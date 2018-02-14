@@ -16,11 +16,11 @@ Workflow_Script.R
 
 SmallWorkingExample.R
 
-The data frames are:
+The data frames are in folder ToyData:
 
-one
+BTPBmc- A 1000 rep monte carlo simulation for the penalized bivariate tensor product B-spline.  Code for this is in the Workflow_Script.
 
-two
+KernelMC-A 1000 rep monte carlo simulation for the Kernel Density Estimator.  Code for this is in the Workflow_Script.
 
 ########FunctionsBTPS.R###########
 
