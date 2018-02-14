@@ -1,17 +1,31 @@
 #####Functions for Bivariate Tensor Product B-splines
+
+##Required Libraries
+
+require(mgcv)
+require(msm)
+require(stats)
+require(rgl)
+require(MASS)
+require(reshape2)
+require(plyr)
+require(ggplot2)
 ########################Function Names and purpose
-#fitBTPS-Fits a penalized bivariate tensor product B-spline using According to Section 
+#fitBTPS-Fits a penalized bivariate tensor product B-spline using According to Section 3
 #         Then estimates the first and second partial derivative with respect to the x values
 #
-#yieldDataSim-creates simulated data in accordance to section 
+#yieldDataSim-creates simulated data in accordance to section 4
 #
 #compute_bandwidth-Calculate bandwidth for kernel density estimation
 #                   Helper function for VarianceEstimator
 #
 #predictDensity-calculate a bivariate kernel density, helper function for VarianceEstimator, uses compute_bandwidth
 #
-#VarianceEstimator-Calculates the variance for a fitBTPS object
+#VarianceEstimator-Calculates the variance for a fitBTPS object according to equation 22
 #
+#kernelDensity
+#
+#fitKernel
 
 #######################################
 
@@ -52,18 +66,22 @@ fitBTPS<-function(y,x,z,knots=c(0,0),degree=c(5,3),penalty=c(1,1),tol1st=.000000
   
   ##create the degree and penalty list for the function
   m<-list(c(degree[1],penalty[1]),c(degree[2],penalty[2]))
-  
+
   ##fit the BTPS using the gam function in r
   theFit<-gam(y~te(x,z,bs=c("ps","ps"),m=m,k=myK),drop.intercept=F)
   
   ###create new data and fit the new data
-  xNew<-seq(newXLim[1],newXLim[2],length.out = 100)
-  zNew<-seq(newZLim[1],newZLim[2],length.out = 100)
+  xNew<-seq(newXLim[1],newXLim[2],length.out = 50)##values of length.out might not work on all computers due to memory limitations
+  zNew<-seq(newZLim[1],newZLim[2],length.out = 50)
+  
+
   
   hold.dataframe<-expand.grid(xNew,zNew)
   
   xNew<-hold.dataframe$Var1
   zNew<-hold.dataframe$Var2
+
+  
   yPred<-as.numeric(predict(theFit,data.frame(x=x,z=z)))
   Fit<-as.numeric(predict(theFit,data.frame(x=xNew,z=zNew)))
   
@@ -79,7 +97,7 @@ fitBTPS<-function(y,x,z,knots=c(0,0),degree=c(5,3),penalty=c(1,1),tol1st=.000000
   Residuals.V<-as.numeric(theFit$residuals)^2
   m.sd<-list(penalty.sd,degree.sd)
   
-  ##Fit the residuals
+  ##Fit the residuals as in equation 20
   fittedRes<-gam(Residuals.V~te(x,z,bs=c("ps","ps"),m=m.sd,k=myK),drop.intercept=F)
   residualsEst<-abs(as.numeric(predict(fittedRes,data.frame(x=xNew,z=zNew))))
   lambdaValues<-theFit$sp
@@ -101,7 +119,7 @@ fitBTPS<-function(y,x,z,knots=c(0,0),degree=c(5,3),penalty=c(1,1),tol1st=.000000
     #"Normal":10N(0,1) or "Beta":50[Beta(alpha,Beta)-alpha/(alpha+beta)]
 #alphaE-alpha value if the beta yield error is used
 #betaE-beta value if the beta yield error is used
-#p-value used for p in equation
+#p-value used for p in equation 2
 #meas_error-the measurement error added to the estimated premium
 
 ##Returns a list with the following:
@@ -118,7 +136,7 @@ yieldDataSim<-function(n,YieldMeanFunc="Linear",YieldVarFunc="Const",YieldError=
   ####simulate x and z values
   xSim<-sample(seq(.55,.95,by=.05),n,replace=T)
   zSim<-rtnorm(n,200,25,100,300)
-  
+
   ##create the yield mean based on linear or quadratic
   if(YieldMeanFunc=="Linear"){
     yieldMean<--25+1.3*zSim
@@ -143,7 +161,7 @@ yieldDataSim<-function(n,YieldMeanFunc="Linear",YieldVarFunc="Const",YieldError=
   ###input the YieldError (Normal or Beta) and estimate the premium value 
   premium<-rep(NA,n)
   if(YieldError=="Normal"){
-    error<-runif(n,0,1)
+    error<-rnorm(n,0,1)
     
     
     if(YieldMeanFunc=="Linear"){s.factor<-10}
@@ -190,10 +208,10 @@ yieldDataSim<-function(n,YieldMeanFunc="Linear",YieldVarFunc="Const",YieldError=
   ##Calculate the current yield
   
   currentYield<-yieldMean+yieldSigma*s.factor*error
-  
-  
+
+
   ###Return List
-  return(list(Yield_Curr=currentYield,Yield_Hist=zSim,Cov_Rate=xSim,Premium=premium,Obs_Prem=premium+rnorm(length(premium),0,meas_error),OverallSigma=s.factor))
+  return(list(Yield_Curr=currentYield,Yield_Hist=zSim,Cov_Rate=xSim,Premium=premium,Obs_Prem=premium+rnorm(length(premium),0,meas_error),OverallSigma=yieldSigma*s.factor))
 }
 
 #####
@@ -246,22 +264,21 @@ predictDensity <- function(xOrig, yOrig,xNew,yNew) {
 #zValues: a vector of the corresponding z values of the variance values
 #variance: a vector of the estimated variance for the points (xValues,zValues)
 
-VarianceEstimator<-function(BTPS.obj,Derv=c(2,0)){
-  
-  #determine the n values
-  n<-length(BTPS.obj$origY)
-  n_ind<-c(length(unique(BTPS.obj$origX)),n/length(unique(BTPS.obj$origX)))
-  
-  #get the information needed from the BTPS.obj (knot locations, smoothing penalties)
+VarianceEstimator<-function(BTPS.obj,Derv=c(2,0),CropData=T){
+
+  #calculate n_1 and n_1 as well as knots
+  n_ind<-c(length(unique(BTPS.obj$origX)),length(BTPS.obj$origY)/length(unique(BTPS.obj$origX)))
   knots<-BTPS.obj$int.knots
   intHvalues<-c(NA,NA)
   hValues<-c(NA,NA)
-  penalties<-c( BTPS.obj$model$smooth[1][[1]]$margin[[1]]$null.space.dim, BTPS.obj$model$smooth[1][[1]]$margin[[2]]$null.space.dim)
-  smoothingPenalties<-as.numeric(BTPS.obj$model$sp)
   
-  #calculate the h function for the appropriate penalty for x (i=1) and z (i=2)
+  #get the needed info from the gam object
+  penalties<-c( BTPS.obj$model$smooth[1][[1]]$margin[[1]]$null.space.dim, BTPS.obj$model$smooth[1][[1]]$margin[[2]]$null.space.dim)
+  smoothingPenalties<-c(max(as.numeric(BTPS.obj$model$sp[1]),1),max(as.numeric(BTPS.obj$model$sp[2]),1))
   for(i in 1:2){
     
+    
+   # function for calculating H as seen in appendix A
     Hfunction<-function(x,dervs=2,penalty=2){
       if(penalty==1){equ<-expression((1/(2)*exp(-x)), "x")}
       if(penalty==2){equ<-expression(1/(2*sqrt(2))*exp(-1/(sqrt(2))*x)*(sin(x/sqrt(2))+cos(x/sqrt(2))), "x")}
@@ -281,27 +298,54 @@ VarianceEstimator<-function(BTPS.obj,Derv=c(2,0)){
       
     }
     
-    #Integrate the H function for each value covariate as well as calculate the h values in equation 
+    ##integration of the H function
     intHvalues[i]<-integrate(Hfunction,lower=.00001,upper=Inf,dervs=Derv[i],penalty=penalties[i])$value
-    hValues[i]<-((knots[i]^-1)*(smoothingPenalties[i]*knots[i]^-1*(n_ind[i]^-1))^(1/(2*penalties[i])))^(2*Derv[i]+1)
+    
+    ##calculation of the h values as given in lemma 1
+    hValues[i]<-((((smoothingPenalties[i]*knots[i]/n_ind[i]))^(1/(2*penalties[i])))/knots[i])^(2*Derv[i]+1)
+  n<-1
+    
+    }
+  finalH<-1
+
+  #combine the h_1 and h_2 values into h
+  if(CropData){
+   finalH<-hValues[1]*hValues[2]
+
+    
   }
-  
-  #use kernel density to estimate f(x,z)
+
+  #estimate f hat by a bivariate kernal density estimator
   kernelDensity<-predictDensity(BTPS.obj$origX,BTPS.obj$origZ,BTPS.obj$newX,BTPS.obj$newZ)
   
-  #combine all pieces to get the estimated variance for each point
-  varianceValues<-4/(n*hValues[1]*hValues[2])*intHvalues[1]*intHvalues[2]*BTPS.obj$smoothedSigma/unlist(kernelDensity)
-  return(list(xValues=BTPS.obj$newX,zValues=BTPS.obj$newZ,variance=varianceValues))
+  #combine into the final variance
+  EstVar<-4*intHvalues[1]*intHvalues[2]*BTPS.obj$smoothedSigma/unlist(kernelDensity)/(finalH*length(BTPS.obj$origX))
+  return(list(xValues=BTPS.obj$newX,zValues=BTPS.obj$newZ,variance=EstVar))
 }
 
 
 
+
+##inputs: w: the dependent variable on which to fit the spline
+#z: the independent variable on which to fit the spline
+#m: a vector of c(degree,penalty) used to fit the p-spline
+#knots: number of interior knots to use 
+#fixedZ:the z values at which to predict the fitted kernel estimator with
+#predictW: the w values at which to predict the fitted kernel estimator with
+
+## outputs: fHat a dataframe  of the fitted kernel estimator values at points  with columns fixedZ and predictW rows)
+
 kernelEstimator<-function(w,z,m,knots,fixedZ,predictW){
   
+  ##fit the p-spline to the data
   theFit<-gam(w~s(z,bs="ps",m=m,k=knots),drop.intercept=F)
   
+  
+  #fit the squared residuals to get sigma^2
   sigmaSquare<-gam(residuals(theFit)^2~s(z,bs="ps",m=m,k=knots),drop.intercept=F)
   
+  
+  #Get the estimated mean and sigma^2
   Predicted_Mu<-as.numeric(predict(theFit,data.frame(z=fixedZ)))
   
   Predicted_SigmaSquare<-abs(as.numeric(predict(sigmaSquare,data.frame(z=fixedZ))))
@@ -313,7 +357,7 @@ kernelEstimator<-function(w,z,m,knots,fixedZ,predictW){
   
   epsilon<-residuals(theFit)/sqrt(predict(sigmaSquare))
   
-  
+  #Iterate through for each value of w and z
   fHat<-data.frame(predictW)
   names(fHat)<-"w"
   for(i in 1:length(fixedZ)){
@@ -334,16 +378,31 @@ kernelEstimator<-function(w,z,m,knots,fixedZ,predictW){
   return(fHat)
 }
 
+##inputs: w: the dependent variable on which to fit the spline
+#z: the independent variable on which to fit the spline
+#degree: the degree of penality used in the p-spline
+#knots: number of interior knots to use 
+#penalty: The penalty of the p-spline used
+#fixedZ: the z values at which to predict the fitted kernel estimator with
+#NumW: the number of w values to estimate the kernel density estimate at
+#wRange: the range of w values to estimate the kernel density estimate at
 
 
+## outputs: list with the following values
+#estimate: The kernel density estimate
+#SD: the standard error of the kernel density estimate
+#fixedZvalue: THe z values that the kernel density was estimated at
 fitKernel<-function(w,z,knots=1,degree=2,penalty=2,fixedZ=NA,NumW=1000,wRange=NA){
-  myK<-c(knots+degree+1)
+ 
+  #put knots kernel and degree and penalty into form to use gam function
+   myK<-c(knots+degree+1)
   
   m<-c(degree,penalty)
   
   
   
   ####Kernel density estimation
+  #set up the values at which to estimate at (default 5 z values)
   if(is.na(wRange[1])){
     
     new_w<-seq(min(w),max(w),length.out=NumW)
@@ -356,21 +415,23 @@ fitKernel<-function(w,z,knots=1,degree=2,penalty=2,fixedZ=NA,NumW=1000,wRange=NA
     
   }else{predictionValues<-fixedZ}
   
-  
+  ##get the kernel density estimates
   finalFhat<-as.matrix(kernelEstimator(w,z,m,myK,predictionValues,new_w))
+
   
-  
-  ###Now for the error estimation
+  ###Now for the error estimation using the jackknife method
   standardErrorMat<-array(,dim=c(NumW,length(predictionValues)+1,length(w)))
   for(i in 1:length(w)){
+
     standardErrorMat[,,i]<-(as.matrix(kernelEstimator(w[-i],z[-i],m,myK,predictionValues,new_w))-finalFhat)^2
     
-    
+  
   }
+  
   standardErrorF<-apply(standardErrorMat, c(1,2), sum,na.rm=T)*(length(w)-1)/length(w)
   
   
-  ##fit the residuals
+  ##return the values
   return(list(estimate=finalFhat,SD=sqrt(standardErrorF),fixedZvalue=predictionValues))
   
 }
