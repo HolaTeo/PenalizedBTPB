@@ -41,7 +41,7 @@ simStudyFunc<-function(reps=1000,seed=9389,samplesize=1500,Yield_Mean="Linear",V
   
  
   Estimates<-array(,dim=c(50,50,(reps+1)))
-  SDEst<-array(,dim=c(50,50,reps))
+  VarEst<-array(,dim=c(50,50,reps))
   
 
   ##iterate through the replicates
@@ -57,7 +57,7 @@ simStudyFunc<-function(reps=1000,seed=9389,samplesize=1500,Yield_Mean="Linear",V
     
     ##record the estimates
     Estimates[,,reps]<-matrix(test$secondDerv/(pVal*test$newZ^2),nrow=50)
-    SDEst[,,reps-1]<-matrix(sqrt(mine$variance)/(pVal*test$newZ^2),nrow=50) 
+    VarEst[,,reps-1]<-matrix(sqrt(mine$variance)/(pVal*test$newZ^2),nrow=50) 
     
     
     
@@ -66,7 +66,7 @@ simStudyFunc<-function(reps=1000,seed=9389,samplesize=1500,Yield_Mean="Linear",V
     
   }
   dimnames(Estimates)<-list(unique(test$newX),unique(test$newZ),repNames)
-  dimnames(SDEst)<-list(unique(test$newX),unique(test$newZ),repNames[-1])
+  dimnames(VarEst)<-list(unique(test$newX),unique(test$newZ),repNames[-1])
   
   #calculate the True Values (Depends on Set Up)
   {
@@ -114,7 +114,7 @@ simStudyFunc<-function(reps=1000,seed=9389,samplesize=1500,Yield_Mean="Linear",V
 }
 
   
-  return(list(Estimates=Estimates,StdError=SDEst))
+  return(list(Estimates=Estimates,Variance=VarEst))
 }
 
 ##inputs: Nreps- the number of monte carlo replacations to run

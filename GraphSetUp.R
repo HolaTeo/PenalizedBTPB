@@ -79,7 +79,7 @@ myGraphs<-function(simDataEst,simDatVar,quantileV=c(.1,.25,.50,.75,.9),Title=NUL
   
   #get into form to use with ggplot
   myCovMelt<-melt(myCoverage)
-  
+
   var1Quant<-sort(myCovMelt$Var1)[c(1,round(length(myCovMelt$Var1)*seq(0,1,length.out=8),0))]
   var2Quant<-sort(myCovMelt$Var2)[c(1,round(length(myCovMelt$Var2)*seq(0,1,length.out=8),0))]
   
@@ -171,18 +171,18 @@ test$StdYield<-round(test$Var1-myMean,0)
 test<-test[test$Var1>(myMean-endPoints[1]*stdDev)&test$Var1<(myMean+endPoints[2]*stdDev),]
 
 
-FinalTest<-ddply(test,.(Var2,StdYield),summarize,covRate=mean(value))
-
+FinalTest<-ddply(test,.(Var2,round(StdYield,-1)),summarize,covRate=mean(value))
+names(FinalTest)[2]<-"StdYield"
 #return data so it fits a reasonable range
-FinalTest<-subset(FinalTest,Var2%in%round(seq(100,300,by = 20),-1)&StdYield%in%round(seq(-40,40,by=8)))
-FinalTest<-subset(FinalTest,abs(StdYield)<40)
+FinalTest<-subset(FinalTest,Var2%in%round(seq(100,300,by = 20))&StdYield%in%round(seq(-40,40,by=10)))
+FinalTest<-subset(FinalTest,abs(round(StdYield,-1))<40)
 
 
 ##create the heat map using ggplot2
 b <- c(60,70,80,90,95,100)
 
 
-ggplot(FinalTest, aes((StdYield), (Var2))) +
+myPlot<-ggplot(FinalTest, aes((StdYield), (Var2))) +
   geom_tile(aes(fill = covRate*100))+geom_text(size=6,aes(label = (round(covRate*100, 1))))+  scale_fill_gradientn(limits=c(60,100),
                                                                                                                    colours=c("Gray 50","blueviolet", "blue", "light blue","white", "red"),
                                                                                                                    breaks=b, labels=format(b),name="Coverage\nRate")+theme_bw()+ scale_x_continuous(name="Standardized Yield") +
@@ -211,7 +211,9 @@ for(i in 1:5){
 plot(1, type = "n", axes=FALSE, xlab="", ylab="")
 
 legend("center",c("True","MC Mean","2.5th & 97.5th\nPercentile"),col=c("black","gray50","gray60"),lty=c(1,1,3), lwd=c(2,4,4),cex=1.8)
-   
+
+
+myPlot  
 }
 
 
